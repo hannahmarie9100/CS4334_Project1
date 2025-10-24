@@ -10,9 +10,59 @@
 ;;		return value at index in history
 ;; ---------------------------------------------------------------------------------------------
 
+(define (lookup index hist)
+  (if (or (< index 1) (> index (length hist))) ;; validating index
+      (error "Error: Invalid expression, please try again.")
+      (list-ref (reverse hist) (- index 1)))) ;; making sure we reverse order first
+
 ;; ---------------------------------------------------------------------------------------------
 ;; evaluating expression - parameters (list, hist (array of history) )
 ;; ---------------------------------------------------------------------------------------------
+
+(define (evaluatingExpression tokens history)
+  (if (null? tokens)
+      (values "Invalid Expression" '())
+      (let ([t (car tokens)]
+            [rest (cdr tokens)])
+        (cond
+          [(equal? t "+")
+           (define-values (a r1) (evaluatingExpression rest history))
+           (define-values (b r2) (evaluatingExpression r1 history))
+           (if (or (string? a) (string? b))
+               (values "Invalid Expression" '())
+               (values (+ a b) r2))]
+
+          [(equal? t "*")
+           (define-values (a r1) (evaluatingExpression rest history))
+           (define-values (b r2) (evaluatingExpression r1 history))
+           (if (or (string? a) (string? b))
+               (values "Invalid Expression" '())
+               (values (* a b) r2))]
+
+          [(equal? t "/")
+           (define-values (a r1) (evaluatingExpression rest history))
+           (define-values (b r2) (evaluatingExpression r1 history))
+           (cond
+             [(or (string? a) (string? b)) (values "Invalid Expression" '())]
+             [(zero? b) (values "Invalid Expression" '())]
+             [else (values (/ a b) r2)])]
+
+          [(equal? t "-")
+           (define-values (a r1) (evaluatingExpression rest history))
+           (if (string? a)
+               (values "Invalid Expression" '())
+               (values (- a) r1))]
+
+          [(regexp-match #px"^\\$\\d+$" t)
+           (define id (string->number (substring t 1)))
+           (if (or (not id) (< id 1) (> id (length history)))
+               (values "Invalid Expression" '())
+               (values (list-ref (reverse history) (- id 1)) rest))]
+
+          [(string->number t)
+           => (lambda (n) (values n rest))]
+
+          [else (values "Invalid Expression" '())]))))
 
 
 
@@ -20,6 +70,9 @@
 ;; helper to split string
 ;; ---------------------------------------------------------------------------------------------
 
+(define (split str)
+  (filter (lambda (s) (not (string=? s "")))
+          (regexp-split #px"\\s+" str)))
 
 ;; ---------------------------------------------------------------------------------------------
 ;; helper to see if the program is running in interactive or batch
