@@ -90,8 +90,34 @@
 ;; creating main looping through string
 ;; ---------------------------------------------------------------------------------------------
 
-
+(define (main hist)
+  (when prompt? (display "Enter expression: "))
+  (define input (read-line))
+  (cond
+    [(eof-object? input) (void)]
+    [(string=? input "quit") (void)]
+    [else
+     (define tokens (split input))
+     (define-values (result remaining) (evaluatingExpression tokens hist))
+     (if (string? result)
+         (begin
+           (displayln (string-append "Error: " result))
+           (main hist))
+         (if (null? remaining)
+             (let* ([new-hist (cons result hist)]
+                    [index (length new-hist)])
+               (display index)
+               (display ": ")
+               (display (real->double-flonum result))
+               (newline)
+               (main new-hist))
+             (begin
+               (displayln "Error: Invalid expression, please try again.")
+               (main hist))))]))
 
 ;; ---------------------------------------------------------------------------------------------
 ;; starting program
 ;; ---------------------------------------------------------------------------------------------
+
+(displayln "Prefix Calculator")
+(main '())
